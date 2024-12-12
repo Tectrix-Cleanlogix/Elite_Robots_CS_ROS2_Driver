@@ -173,7 +173,7 @@ void GPIOController::publishIO() {
     }
     for (size_t i = 0; i < CONF_DIG_GPIO_NUM; ++i) {
         io_msg_.config_out[i] = static_cast<bool>(state_interfaces_[i + (int)StateOffset::CONFIGURE_DIG_OUT].get_value());
-        io_msg_.config_in[i] = static_cast<bool>(state_interfaces_[i + (int)StateOffset::CONFIGURE_DIG_OUT].get_value());
+        io_msg_.config_in[i] = static_cast<bool>(state_interfaces_[i + (int)StateOffset::CONFIGURE_DIG_IN].get_value());
     }
     for (size_t i = 0; i < TOOL_DIG_GPIO_NUM; ++i) {
         io_msg_.tool_out[i] = static_cast<bool>(state_interfaces_[i + (int)StateOffset::TOOL_DIG_OUT].get_value());
