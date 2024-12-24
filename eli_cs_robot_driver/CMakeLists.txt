@@ -19,7 +19,7 @@ find_package(tf2_geometry_msgs REQUIRED)
 find_package(controller_manager REQUIRED)
 find_package(controller_manager_msgs REQUIRED)
 find_package(backward_ros REQUIRED)
-find_package(elite_robot_client 1.1.0 REQUIRED)
+find_package(elite-cs-series-sdk 1.1.0 REQUIRED)
 
 set(
   THIS_PACKAGE_DEPENDENCIES
@@ -39,7 +39,7 @@ set(
 add_library(dashboard_client_component SHARED src/dashboard_client.cpp)
 target_link_libraries(
   dashboard_client_component
-  elite_robot_client
+  elite-cs-series-sdk
 )
 target_include_directories(
   dashboard_client_component
@@ -65,7 +65,7 @@ install(
 add_library(script_node_component SHARED src/script_node.cpp)
 target_link_libraries(
   script_node_component
-  elite_robot_client
+  elite-cs-series-sdk
 )
 target_include_directories(
   script_node_component
@@ -96,7 +96,7 @@ target_link_libraries(
   eli_components_loader
   script_node_component
   dashboard_client_component
-  elite_robot_client
+  elite-cs-series-sdk
 )
 target_include_directories(
   eli_components_loader
@@ -117,7 +117,7 @@ add_library(
 )
 target_link_libraries(
   eli_cs_hardware_interface_plugin
-  elite_robot_client
+  elite-cs-series-sdk
 )
 target_include_directories(
   eli_cs_hardware_interface_plugin
