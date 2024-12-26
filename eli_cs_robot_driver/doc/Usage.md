@@ -16,7 +16,7 @@ The arguments for launch files can be listed using `ros2 launch eli_cs_robot_dri
 
 > Note : joint_state_broadcaster, speed_scaling_state_broadcaster, force_torque_sensor_broadcaster, and io_and_status_controller will always start.
 
-> Note : list all loaded controllers using ros2 control list_controllers command. For this, the package ros2controlcli must be installed. Command: `sudo apt-get install ros-${ROS_DISTRO}-ros2controlcli`.
+> Note : list all loaded controllers using `ros2 control list_controllers command`. For this, the package ros2controlcli must be installed. Command: `sudo apt-get install ros-${ROS_DISTRO}-ros2controlcli`.
 
 ## Example Commands for Testing the Driver
 
@@ -43,7 +43,7 @@ ros2 launch eli_cs_robot_driver elite_control.launch.py robot_ip:=xxx.xxx.xxx.xx
 
 ### 2. Sending commands to controllers
 
-Before running any commands, first check the controllers’ state using ros2 control list_controllers (Remember to install the ros2controlcli package as mentioned above).
+Before running any commands, first check the controllers’ state using `ros2 control list_controllers` (Remember to install the ros2controlcli package as mentioned above).
 
 - Send some goal to the Joint Trajectory Controller by using a demo node from ros2_controllers_test_nodes package by starting the following command in another terminal:
 ```bash
@@ -144,7 +144,7 @@ While most tf frames come from the URDF and are published from the robot_state_p
 ## Custom script
 The driver’s package contains a script_sender node that allows sending script snippets directly to the robot when the robot is in remote control mode.
 
-It gets started in the driver’s launchfiles by default. To use it, simply publish a message to its interface:
+It gets started in the driver’s launch files by default. To use it, simply publish a message to its interface:
 ```bash
 # Display a popup box on the teach pendant.
 ros2 topic pub /script_sender/script_command std_msgs/msg/String '{data: popup("hello")}' --once

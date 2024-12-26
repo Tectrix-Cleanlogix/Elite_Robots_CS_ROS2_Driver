@@ -1,3 +1,5 @@
+[中文](./README_CN.md)
+
 # Elite CS Robot Ros2 Driver
 
 This driver is developed on top of `Elite_Robots_CS_SDK` and support some key cobot functionalities like: motion, set digital io. In addition the ExternalControl EliCOs makes it possible to include ROS2 behaviors in the robot program.
@@ -20,12 +22,20 @@ This driver is developed on top of `Elite_Robots_CS_SDK` and support some key co
 
 ## Getting Started
 For getting started, you'll basically need follow steps:
-1. Ensure your ros environment. And recommended to run the following command to resolve the dependency issue:
+1. If your system is Ubuntu20.04, Ubuntu22.04 or Ubuntu24.04, you can run the following command to install `elite-cs-series-sdk`:
+    ```bash
+    sudo add-apt-repository ppa:elite-robots/cs-robot-series-sdk
+    sudo apt update
+    sudo apt install elite-cs-series-sdk
+    ```
+    Else, you must install the `elite-cs-series-sdk` from [source](https://github.com/Elite-Robots/Elite_Robots_CS_SDK).
+
+2. Ensure your ros environment. And recommended to run the following command to resolve the dependency issue:
     ```bash
     sudo apt update
     rosdep install --ignore-src --rosdistro $ROS_DISTRO --from-paths src -y
     ```
-2. **Compile driver**
+3. **Compile driver**
     ```bash
     # create a workspace
     mkdir -p elite_ros_ws/src
@@ -35,16 +45,18 @@ For getting started, you'll basically need follow steps:
     # compile
     colcon build
     ```
-3. **Install**
+4. **Install**
     ```bash
     . install/setup.bash
     ```
 
-4. **Start the driver. See the [usage](eli_cs_robot_driver/doc/Usage.md) documentation for details**
+5. **Start the driver. See the [usage](eli_cs_robot_driver/doc/Usage.md) documentation for details**
     ```bash
     ros2 launch eli_cs_robot_driver elite_control.launch.py robot_ip:=<robot ip> local_ip:=<your pc ip> cs_type:=cs66
     ```
 
-5. Unless started in [headless mode](doc/ROS2Interface.md): Run the task which contain ExternalControl node by pressing play on the teach pendant.
+6. Unless started in [headless mode](doc/ROS2Interface.md#headless_mode): Run the task which contain ExternalControl node by pressing play on the teach pendant.
 
-> If the compilation fails, you can check that the version of the dependency package matches. [dependency list](doc/DependencyList.md)
+> tips:
+> - If the compilation fails, you can check that the version of the dependency package matches. [dependency list](doc/DependencyList.md)
+> - If use real robot, ensure your robot FB1 and FB2 connected to network.
