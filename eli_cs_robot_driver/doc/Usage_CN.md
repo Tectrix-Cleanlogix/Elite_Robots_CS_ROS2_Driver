@@ -2,13 +2,13 @@
 
 ## Launch files
 在`eli_cs_robot_driver`包中有一个启动文件来启动CS系列机器人的驱动程序：
-- elite_control.launch.py - 启动了 [ros2_control](https://control.ros.org/rolling/index.html) 节点，此节点包括： hardware interface、joint state broadcaster以及一个controller。 如果使用的是真机，此驱动程序同样会启动dashboard_client。
+- elite_control.launch.py - 启动了 [ros2_control](https://control.ros.org/humble/index.html) 节点，此节点包括： hardware interface、joint state broadcaster以及一个controller。 如果使用的是真机，此驱动程序同样会启动dashboard_client。
 
 使用 `ros2 launch eli_cs_robot_driver elite_control.launch.py --show-args`指令能看到启动文件的参数以及解释。比较经常实用的参数以及解释如下:
 - `cs_type` (mandatory) - 机器人类型（cs63, cs66, cs612, cs616, cs620, cs625）。
 - `robot_ip` (mandatory) - 机器人FB1的IP（确保能连通）。
 - `local_ip` (mandatory) - 外部控制器的IP（确保机器人能连通）。
-- `use_fake_hardware` (default: false ) - 使用来自[ros2_control]（https://control.ros.org/rolling/index.html）的简单硬件模拟器。用于测试启动文件、描述等。见下面的解释。
+- `use_fake_hardware` (default: false ) - 使用来自[ros2_control](https://control.ros.org/humble/index.html)的简单硬件模拟器。用于测试启动文件、描述等。见下面的解释。
 - `fake_sensor_commands` (default: false ) - 允许为硬件模拟器设置传感器值。用于控制器的离线测试。
 - `initial_joint_controller`(default: scaled_joint_trajectory_controller) - 用于控制机器人关节的控制器。可选的控制器有:
     - joint_trajectory_controller

@@ -2,13 +2,13 @@
 
 ## Launch files
 For starting the driver there are a main launch files in the `eli_cs_robot_driver` package.
-- elite_control.launch.py - starts [ros2_control](https://control.ros.org/rolling/index.html) node including hardware interface, joint state broadcaster and a controller. This launch file also starts dashboard_client if real robot is used.
+- elite_control.launch.py - starts [ros2_control](https://control.ros.org/humble/index.html) node including hardware interface, joint state broadcaster and a controller. This launch file also starts dashboard_client if real robot is used.
 
 The arguments for launch files can be listed using `ros2 launch eli_cs_robot_driver elite_control.launch.py --show-args`. The most relevant arguments are the following:
 - `cs_type` (mandatory) - a type of used Elite CS robot(cs63, cs66, cs612, cs616, cs620, cs625).
 - `robot_ip` (mandatory) - the used robot ip which the root can be reached.
 - `local_ip` (mandatory) - the external controller ip address which robot can readched.
-- `use_fake_hardware` (default: false ) - use simple hardware emulator from [ros2_control](https://control.ros.org/rolling/index.html). Useful for testing launch files, descriptions, etc. See explanation below.
+- `use_fake_hardware` (default: false ) - use simple hardware emulator from [ros2_control](https://control.ros.org/humble/index.html). Useful for testing launch files, descriptions, etc. See explanation below.
 - `fake_sensor_commands` (default: false ) - enables setting sensor values for the hardware emulators. Useful for offline testing of controllers.
 - `initial_joint_controller`(default: scaled_joint_trajectory_controller) - controller for robot joints to be started. Available controllers:
     - joint_trajectory_controller
