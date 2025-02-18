@@ -75,7 +75,7 @@ def launch_setup(context, *args, **kwargs):
             safety_k_position,
             " ",
             "name:=",
-            "cs",
+            "cs612",
             " ",
             "cs_type:=",
             cs_type,
@@ -105,7 +105,7 @@ def launch_setup(context, *args, **kwargs):
             "name:=",
             # Also cs_type parameter could be used but then the planning group names in yaml
             # configs has to be updated!
-            "cs",
+            cs_type,
             " ",
             "prefix:=",
             prefix,
@@ -173,6 +173,7 @@ def launch_setup(context, *args, **kwargs):
         package="moveit_ros_move_group",
         executable="move_group",
         output="screen",
+        # arguments=["--ros-args", "--log-level", "DEBUG"],
         parameters=[
             robot_description,
             robot_description_semantic,
@@ -214,7 +215,7 @@ def launch_setup(context, *args, **kwargs):
     servo_node = Node(
         package="moveit_servo",
         condition=IfCondition(launch_servo),
-        executable="servo_node_main",
+        executable="servo_node",
         parameters=[
             servo_params,
             robot_description,

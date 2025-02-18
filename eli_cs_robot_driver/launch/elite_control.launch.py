@@ -264,7 +264,8 @@ def launch_setup(context, *args, **kwargs):
         "speed_scaling_state_broadcaster",
         "force_torque_sensor_broadcaster",
     ]
-    controller_spawner_inactive_names = ["forward_position_controller"]
+    controller_spawner_inactive_names = [
+        "servo_controller", "forward_position_controller"]
 
     controller_spawners = [controller_spawner(name) for name in controller_spawner_names] + [
         controller_spawner(name, active=False) for name in controller_spawner_inactive_names
@@ -308,10 +309,10 @@ def launch_setup(context, *args, **kwargs):
         # tool_communication_node,
         controller_stopper_node,
         robot_state_publisher_node,
-        rviz_node,
+        # rviz_node,
         initial_joint_controller_spawner_stopped,
         initial_joint_controller_spawner_started,
-    ] + controller_spawners
+  ] + controller_spawners
 
     return nodes_to_start
 

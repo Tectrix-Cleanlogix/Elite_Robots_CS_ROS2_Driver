@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://wiki.ros.org/xacro" name="$(arg name)">
    <!-- robot name parameter -->
-   <xacro:arg name="name" default="cs"/>
+   <xacro:arg name="name" default="cs612"/>
    <!-- import main macro -->
    <xacro:include filename="$(find eli_cs_robot_description)/urdf/cs_macro.xacro"/>
 
@@ -22,9 +22,9 @@
    <!-- ros2_control related parameters -->
    <xacro:arg name="headless_mode" default="false" />
    <xacro:arg name="robot_ip" default="0.0.0.0" />
-   <xacro:arg name="script_filename" default=""/>
-   <xacro:arg name="output_recipe_filename" default=""/>
-   <xacro:arg name="input_recipe_filename" default=""/>
+   <xacro:arg name="script_filename" default="$(find eli_cs_robot_driver)/resources/external_control.script"/>
+   <xacro:arg name="output_recipe_filename" default="$(find eli_cs_robot_driver)/resources/input_recipe.txt"/>
+   <xacro:arg name="input_recipe_filename" default="$(find eli_cs_robot_driver)/resources/output_recipe.txt"/>
    <xacro:arg name="local_ip" default="0.0.0.0"/>
    <xacro:arg name="script_command_port" default="50004"/>
    <xacro:arg name="reverse_port" default="50001"/>
