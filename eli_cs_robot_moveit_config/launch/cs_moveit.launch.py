@@ -75,7 +75,7 @@ def launch_setup(context, *args, **kwargs):
             safety_k_position,
             " ",
             "name:=",
-            "cs",
+            "cs612",
             " ",
             "cs_type:=",
             cs_type,
@@ -105,7 +105,7 @@ def launch_setup(context, *args, **kwargs):
             "name:=",
             # Also cs_type parameter could be used but then the planning group names in yaml
             # configs has to be updated!
-            "cs",
+            cs_type,
             " ",
             "prefix:=",
             prefix,
@@ -214,7 +214,7 @@ def launch_setup(context, *args, **kwargs):
     servo_node = Node(
         package="moveit_servo",
         condition=IfCondition(launch_servo),
-        executable="servo_node_main",
+        executable="servo_node",
         parameters=[
             servo_params,
             robot_description,
@@ -236,7 +236,7 @@ def generate_launch_description():
         DeclareLaunchArgument(
             "cs_type",
             description="Type/series of used ELITE CS robot.",
-            choices=["cs63", "cs66", "cs612", "cs616", "cs620", "cs625"],
+            choices=["cs63", "cs66", "cs612", "cs612s", "cs616", "cs620", "cs625"],
         )
     )
     declared_arguments.append(
