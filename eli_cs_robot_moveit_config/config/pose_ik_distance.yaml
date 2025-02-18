@@ -1,4 +1,4 @@
-cs612_manipulator:
+cs612s_manipulator:
   kinematics_solver: pose_ik_plugin/PoseIKPlugin
   target_tolerance: 0.001
   solve_mode: "optimize_distance"
