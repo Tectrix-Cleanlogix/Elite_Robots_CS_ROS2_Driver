@@ -65,7 +65,7 @@ planner_configs:
     max_nearest_neighbors: 10  # use k nearest neighbors. default: 10
   PRMstarkConfigDefault:
     type: geometric::PRMstar
-cs612_manipulator:
+cs612s_manipulator:
   default_planner_config: RRTConnectkConfigDefault
   planner_configs:
     - SBLkConfigDefault
