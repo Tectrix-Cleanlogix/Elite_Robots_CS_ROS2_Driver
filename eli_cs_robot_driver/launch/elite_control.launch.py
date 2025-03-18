@@ -312,7 +312,7 @@ def generate_launch_description():
         DeclareLaunchArgument(
             "cs_type",
             description="Type/series of used Elite robot CS series.",
-            choices=["cs63", "cs66", "cs612", "cs612s", "cs616", "cs620", "cs625"],
+            choices=["cs63", "cs66", "cs612", "cs612s2", "cs616", "cs620", "cs625"],
         )
     )
     declared_arguments.append(
