@@ -41,6 +41,8 @@ def launch_setup(context, *args, **kwargs):
     reverse_port = LaunchConfiguration("reverse_port")
     script_sender_port = LaunchConfiguration("script_sender_port")
     trajectory_port = LaunchConfiguration("trajectory_port")
+    parent = LaunchConfiguration("parent")
+    custom_xacro_path = LaunchConfiguration("custom_xacro_path")
 
     joint_limit_params = PathJoinSubstitution(
         [FindPackageShare(description_package), "config", cs_type, "joint_limits.yaml"]
@@ -64,11 +66,19 @@ def launch_setup(context, *args, **kwargs):
         [FindPackageShare("eli_cs_robot_driver"), "resources", "output_recipe.txt"]
     )
 
+    robot_description_file = None
+    if (custom_xacro_path == ""):
+        robot_description_file = [FindPackageShare(description_package), "urdf", description_file]
+    else:
+        custom_xacro_value = custom_xacro_path.perform(context)
+        pkg_name, rel_path = custom_xacro_value.split("/", 1)
+        robot_description_file = [FindPackageShare(pkg_name), rel_path]
+
     robot_description_content = Command(
         [
             PathJoinSubstitution([FindExecutable(name="xacro")]),
             " ",
-            PathJoinSubstitution([FindPackageShare(description_package), "urdf", description_file]),
+            PathJoinSubstitution(robot_description_file),
             " ",
             "robot_ip:=",
             robot_ip,
@@ -150,6 +160,9 @@ def launch_setup(context, *args, **kwargs):
             " ",
             "trajectory_port:=",
             trajectory_port,
+            " ",
+            "parent:=",
+            parent,
             " ",
         ]
     )
@@ -510,4 +523,19 @@ def generate_launch_description():
             description="Port that will be opened for trajectory control.",
         )
     )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "parent",
+            default_value="world",
+            description="Link that the arm is attached to.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "custom_xacro_path",
+            default_value="",
+            description="Path to the custom xacro, relative to a package.",
+        )
+    )
+
     return LaunchDescription(declared_arguments + [OpaqueFunction(function=launch_setup)])
