@@ -27,6 +27,9 @@ controller_manager:
     scaled_joint_trajectory_controller:
       type: eli_cs_controllers/ScaledJointTrajectoryController
 
+    velocity_force_controller:
+      type: velocity_force_controller/VelocityForceController
+
 force_torque_sensor_broadcaster:
   ros__parameters:
     sensor_name: $(var tf_prefix)tcp_fts_sensor
@@ -151,3 +154,69 @@ scaled_joint_trajectory_controller:
       $(var tf_prefix)wrist_2_joint: { trajectory: 0.2, goal: 0.1 }
       $(var tf_prefix)wrist_3_joint: { trajectory: 0.2, goal: 0.1 }
     speed_scaling_interface_name: $(var tf_prefix)speed_scaling/speed_scaling_factor
+
+velocity_force_controller:
+  ros__parameters:
+    # Joints that the controller will control.
+    joints:
+      - $(var tf_prefix)shoulder_pan_joint
+      - $(var tf_prefix)shoulder_lift_joint
+      - $(var tf_prefix)elbow_joint
+      - $(var tf_prefix)wrist_1_joint
+      - $(var tf_prefix)wrist_2_joint
+      - $(var tf_prefix)wrist_3_joint
+    # Base frame of the kinematic chain, for computation of arm kinematics.
+    base_frame: base_link
+    # The tip link of the kinematic chain, i.e. the frame that will be controlled.
+    ee_frame: tool0
+    # The frame where the force / torque sensor reading is given.
+    # (Needs to exist in the kinematic chain).
+    sensor_frame: tool0
+    # The force/torque ros2_control hardware interface name.
+    ft_sensor_name: tcp_fts_sensor
+    # An optional deadband to apply to the force/torque signal. Set to 0.0 to disable.
+    ft_force_deadband: 2.0
+    ft_torque_deadband: 1.0
+    # Maximum joint-space velocities.
+    max_joint_velocity:
+      - 0.524
+      - 0.524
+      - 0.524
+      - 1.047
+      - 1.047
+      - 1.047
+    # Maximum joint-space accelerations.
+    max_joint_acceleration:
+      - 0.524
+      - 0.524
+      - 0.524
+      - 0.524
+      - 0.524
+      - 0.524
+    # Maximum Cartesian-space velocities.
+    max_cartesian_velocity:
+      - 0.25
+      - 0.25
+      - 0.25
+      - 1.5707
+      - 1.5707
+      - 1.5707
+    # Maximum Cartesian-space accelerations.
+    max_cartesian_acceleration:
+      - 2.0
+      - 2.0
+      - 2.0
+      - 4.0
+      - 4.0
+      - 4.0
+    # Additional optional parameters for reference (set to defaults):
+    # Cutoff frequency ratio for the FTS filter. Valid values range from 0 to 1, where 1 is the sampling frequency.
+    ft_cutoff_frequency_ratio: 1.0
+    # Rate in Hz at which the controller will publish the state.
+    state_publish_rate: 50
+    # Damping coefficient for the Jacobian damped least-squares inverse.
+    jacobian_damping: 0.001
+    # Timeout in seconds after which the controller will stop motion if no new commands are received.
+    command_timeout: 0.2
+    # Padding (in radians) to add to joint position limits as a safety margin.
+    joint_limit_position_tolerance: 0.02
