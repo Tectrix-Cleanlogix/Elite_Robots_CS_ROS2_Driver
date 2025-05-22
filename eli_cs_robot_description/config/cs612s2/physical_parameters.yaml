@@ -1,0 +1,100 @@
+# Physical parameters
+
+dh_parameters:
+  d1: 0.1930
+  a2: -0.5410
+  a3: -0.5710
+  d4: 0.1775
+  d5: 0.1180
+  d6: 0.1103
+
+inertia_parameters:
+  base_mass: 0.94888  # base mass, base inertia, base cog might be incorrect
+  shoulder_mass: 10.48
+  upperarm_mass: 23.317
+  forearm_mass: 9.872
+  wrist_1_mass: 3.465
+  wrist_2_mass: 3.131
+  wrist_3_mass: 1.041
+
+  inertia:
+    base:
+      ixx: 0.0026222
+      ixy: -2.8951e-06
+      ixz: -1.019e-06
+      iyy: 0.0039906
+      iyz: 5.2685e-06
+      izz: 0.0029607
+    shoulder:
+      ixx: 0.0392
+      ixy: -2.84e-05
+      ixz: 3.929e-05
+      iyy: 0.02508
+      iyz: -0.000288
+      izz: 0.03749
+    upperarm:
+      ixx: 0.373
+      ixy: -6.0e-05
+      ixz: -0.5014
+      iyy: 2.0186
+      iyz: -0.00013
+      izz: 1.681
+    forearm:
+      ixx: 0.030106
+      ixy: -1.3e-05
+      ixz: -0.07655
+      iyy: 0.764044
+      iyz: 1.33e-06
+      izz: 0.742095
+    wrist_1:
+      ixx: 0.006089
+      ixy: 1.22e-05
+      ixz: -4.1e-06
+      iyy: 0.00497
+      iyz: -1.3e-05
+      izz: 0.003307
+    wrist_2:
+      ixx: 0.004638
+      ixy: 1.31e-06
+      ixz: 3.83e-06
+      iyy: 0.003507
+      iyz: 1.42e-05
+      izz: 0.00313
+    wrist_3:
+      ixx: 0.001694
+      ixy: 1.27e-07
+      ixz: 1.98e-05
+      iyy: 0.001712
+      iyz: 7.7e-06
+      izz: 0.00057
+
+
+  center_of_mass:
+    base_cog:
+      x: -0.00010524
+      y: 0.065979
+      z: 5.6715e-05
+    shoulder_cog:
+      x: 9.3e-05
+      y: -0.026966
+      z: 0.021151
+    upperarm_cog:
+      x: 0.19538
+      y: -3.9e-05
+      z: 0.16068
+    forearm_cog:
+      x: -0.29981
+      y: 1.3e-05
+      z: 0.06176
+    wrist_1_cog:
+      x: 1.0e-05
+      y: -0.01481
+      z: -0.01682
+    wrist_2_cog:
+      x: -1.3e-05
+      y: 0.01559
+      z: -0.0118
+    wrist_3_cog:
+      x: -0.0017
+      y: -0.00071
+      z: -0.03923
