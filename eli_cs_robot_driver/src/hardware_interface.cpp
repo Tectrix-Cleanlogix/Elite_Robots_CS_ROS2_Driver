@@ -322,6 +322,8 @@ hardware_interface::CallbackReturn EliteCSPositionHardwareInterface::on_configur
     const int reverse_port = stoi(info_.hardware_parameters["reverse_port"]);
     // The driver will offer an interface to receive the task's script on this port.
     const int script_sender_port = stoi(info_.hardware_parameters["script_sender_port"]);
+    // Limit long the lifecycle Configure state attempts to connect to arm
+    const int robot_connect_timeout = stoi(info_.hardware_parameters["robot_connect_timeout"]);
 
     // The ip address of the host the driver runs on
     std::string local_ip = info_.hardware_parameters["local_ip"];
@@ -347,7 +349,11 @@ hardware_interface::CallbackReturn EliteCSPositionHardwareInterface::on_configur
     // Obtain the tf_prefix which is needed for the logging handler so that log messages from different arms are
     // distiguishable in the log
     const std::string tf_prefix = info_.hardware_parameters.at("tf_prefix");
+
     RCLCPP_INFO(rclcpp::get_logger("EliteCSPositionHardwareInterface"), "Initializing driver...");
+
+    auto start_time = std::chrono::steady_clock::now();
+
     try {
         eli_driver_ = std::make_unique<ELITE::EliteDriver>(
             robot_ip,
@@ -361,12 +367,31 @@ hardware_interface::CallbackReturn EliteCSPositionHardwareInterface::on_configur
             servoj_time,
             servoj_lookahead_time,
             servoj_gain);
+
+        bool connected = false;
+        while (!connected) {
+            if (timeoutExpired(start_time, robot_connect_timeout)) {
+                throw ELITE::EliteException(ELITE::EliteException::Code::SOCKET_CONNECT_FAIL,
+                    "connection timeout after " + std::to_string(robot_connect_timeout) + " seconds");
+            }
+
+            connected = eli_driver_->connect();
+            // Node sleep before retry
+            rclcpp::sleep_for(std::chrono::seconds(2));
+        }
+
         rtsi_ = std::make_unique<ELITE::RtsiIOInterface>(output_recipe_filename, input_recipe_filename, 250);
-        if (rtsi_->connect(robot_ip)) {
-            RCLCPP_INFO(rclcpp::get_logger("EliteCSPositionHardwareInterface"), "RTSI connect: 'success'.");
-        } else {
-            RCLCPP_FATAL(rclcpp::get_logger("EliteCSPositionHardwareInterface"), "RTSI connect: 'fail'.");
-            return hardware_interface::CallbackReturn::ERROR;
+
+        connected = false;
+        while (!connected) {
+            if (timeoutExpired(start_time, robot_connect_timeout)) {
+                throw ELITE::EliteException(ELITE::EliteException::Code::SOCKET_CONNECT_FAIL,
+                    "connection timeout after " + std::to_string(robot_connect_timeout) + " seconds");
+            }
+
+            connected = rtsi_->connect(robot_ip);
+            // Node sleep before retry
+            rclcpp::sleep_for(std::chrono::seconds(2));
         }
     } catch (ELITE::EliteException& e) {
         RCLCPP_FATAL_STREAM(rclcpp::get_logger("EliteCSPositionHardwareInterface"), e.what());
@@ -409,6 +434,11 @@ hardware_interface::CallbackReturn EliteCSPositionHardwareInterface::on_cleanup(
     return hardware_interface::CallbackReturn::SUCCESS;
 }
 
+bool EliteCSPositionHardwareInterface::timeoutExpired(std::chrono::time_point<std::chrono::steady_clock> start_time, int timeout_s) {
+    auto current_time = std::chrono::steady_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(current_time - start_time).count();
+    return (elapsed >= timeout_s);
+}
 
 void EliteCSPositionHardwareInterface::asyncThread() {
     while (async_thread_alive_) {
@@ -598,7 +628,6 @@ void EliteCSPositionHardwareInterface::checkAsyncIO() {
         zero_ftsensor_cmd_ = NO_NEW_CMD;
     }
 }
-
 
 void EliteCSPositionHardwareInterface::transformForceTorque() {
     tcp_force_.setValue(ft_sensor_measurements_[0], ft_sensor_measurements_[1], ft_sensor_measurements_[2]);

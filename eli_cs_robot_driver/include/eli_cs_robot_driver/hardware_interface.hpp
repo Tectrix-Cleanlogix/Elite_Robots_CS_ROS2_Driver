@@ -152,6 +152,7 @@ protected:
     tf2::Vector3 tcp_torque_;
     geometry_msgs::msg::TransformStamped tcp_transform_;
 
+    bool timeoutExpired(std::chrono::time_point<std::chrono::steady_clock>, int);
     void asyncThread();
     void checkAsyncIO();
     void extractToolPose();

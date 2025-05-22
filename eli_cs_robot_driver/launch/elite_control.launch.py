@@ -119,6 +119,10 @@ def launch_setup(context, *args, **kwargs):
             "tf_prefix:=",
             tf_prefix,
             " ",
+            # Set robot connect timeout to same value as controller spawner timeout
+            "robot_connect_timeout:=",
+            robot_connect_timeout,
+            " ",
             "use_fake_hardware:=",
             use_fake_hardware,
             " ",
@@ -172,7 +176,7 @@ def launch_setup(context, *args, **kwargs):
     initial_joint_controllers = PathJoinSubstitution(
         [FindPackageShare(runtime_config_package), "config", controllers_file]
     )
-    
+
     rviz_config_file = PathJoinSubstitution(
         [FindPackageShare(description_package), "rviz", "view_robot.rviz"]
     )
@@ -216,7 +220,7 @@ def launch_setup(context, *args, **kwargs):
         parameters=[{"robot_ip": robot_ip}],
         condition=UnlessCondition(use_fake_hardware)
     )
-      
+
     controller_stopper_node = Node(
         package="eli_cs_robot_driver",
         executable="controller_stopper_node",

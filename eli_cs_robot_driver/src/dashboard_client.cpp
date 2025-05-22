@@ -1,23 +1,22 @@
+#include <chrono>
 #include "eli_cs_robot_driver/dashboard_client.hpp"
 
 namespace ELITE_CS_ROBOT_ROS_DRIVER {
 
 DashboardClient::DashboardClient(const rclcpp::NodeOptions& options) : Node("dashboard_client", options) {
-    this->declare_parameter<std::string>("robot_ip", "192.168.51.244");
+    this->declare_parameter<std::string>("robot_ip", "0.0.0.0");
+    this->declare_parameter<double>("connect_interval", 2.0); // seconds
+    this->declare_parameter<int>("robot_connect_timeout", 10); // seconds
 
-    bool is_connect_success = false;
-    try {
-        RCLCPP_INFO(rclcpp::get_logger("EliteCSDashboardInterface"), "Connecting to robot ...");
-        std::string robot_ip = this->get_parameter("robot_ip").as_string();
-        is_connect_success = client_.connect(robot_ip);
-    } catch (const ELITE::EliteException& e) {
-        is_connect_success = false;
-    }
-    if (is_connect_success) {
-        RCLCPP_INFO(rclcpp::get_logger("EliteCSDashboardInterface"), "Connect to robot success");
-    } else {
-        RCLCPP_INFO(rclcpp::get_logger("EliteCSDashboardInterface"), "Connect to robot fail");
-    }
+    // Create a timer for connection attempts
+    auto connect_interval = this->get_parameter("connect_interval").as_double();
+    connection_timer_ = this->create_wall_timer(
+        std::chrono::duration<double>(connect_interval),
+        std::bind(&DashboardClient::attemptConnection, this));
+
+    robot_ip_ = this->get_parameter("robot_ip").as_string();
+    robot_connect_timeout_ = this->get_parameter("robot_connect_timeout").as_int();
+    start_time_ = std::chrono::steady_clock::now();
 
     power_on_service_ = createTriggerService("~/power_on", [&]() -> bool { return client_.powerOn(); });
     power_off_service_ = createTriggerService("~/power_off", [&]() -> bool { return client_.powerOff(); });
@@ -183,6 +182,48 @@ DashboardClient::DashboardClient(const rclcpp::NodeOptions& options) : Node("das
                 resp->message = e.what();
             }
         });
+}
+
+void DashboardClient::attemptConnection() {
+    bool is_connect_success = false;
+
+    if (timeoutExpired(start_time_, robot_connect_timeout_)) {
+        RCLCPP_FATAL_STREAM(
+            rclcpp::get_logger("EliteCSDashboardInterface"),
+            "Could not connect to robot after " + std::to_string(robot_connect_timeout_) + " seconds"
+        );
+
+        // Cancel the timer since we've given up
+        connection_timer_->cancel();
+        return;
+    }
+
+    try {
+        RCLCPP_INFO(rclcpp::get_logger("EliteCSDashboardInterface"), "Connecting to robot dashboard...");
+        is_connect_success = client_.connect(robot_ip_, ELITE::DEFAULT_DASHBOARD_PORT);
+    } catch (const ELITE::EliteException& e) {
+        is_connect_success = false;
+    }
+    
+    if (is_connect_success) {
+        RCLCPP_INFO(
+            rclcpp::get_logger("EliteCSDashboardInterface"),
+            "Connected to robot dashboard at %s:%d", robot_ip_.c_str(), ELITE::DEFAULT_DASHBOARD_PORT
+        );
+        // Cancel the timer since we've successfully connected
+        connection_timer_->cancel();
+    } else {
+        RCLCPP_WARN(
+            rclcpp::get_logger("EliteCSDashboardInterface"),
+            "Connection to robot dashboard failed for %s:%d", robot_ip_.c_str(), ELITE::DEFAULT_DASHBOARD_PORT
+        );
+    }
+}
+
+bool DashboardClient::timeoutExpired(std::chrono::time_point<std::chrono::steady_clock> start_time, int timeout_s) {
+    auto current_time_ = std::chrono::steady_clock::now();
+    auto elapsed_ = std::chrono::duration_cast<std::chrono::seconds>(current_time_ - start_time).count();
+    return (elapsed_ >= timeout_s);
 }
 
 DashboardClient::~DashboardClient() {}

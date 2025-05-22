@@ -22,6 +22,7 @@
    <xacro:arg name="safety_k_position" default="20"/>
    <!-- ros2_control related parameters -->
    <xacro:arg name="headless_mode" default="false" />
+   <xacro:arg name="robot_connect_timeout" default="10" />   
    <xacro:arg name="robot_ip" default="0.0.0.0" />
    <xacro:arg name="script_filename" default="$(find eli_cs_robot_driver)/resources/external_control.script"/>
    <xacro:arg name="output_recipe_filename" default="$(find eli_cs_robot_driver)/resources/input_recipe.txt"/>
@@ -86,6 +87,7 @@
      tool_stop_bits="$(arg tool_stop_bits)"
      tool_tcp_port="$(arg tool_tcp_port)"
      robot_ip="$(arg robot_ip)"
+     robot_connect_timeout="$(arg robot_connect_timeout)"
      script_filename="$(arg script_filename)"
      output_recipe_filename="$(arg output_recipe_filename)"
      input_recipe_filename="$(arg input_recipe_filename)"

@@ -44,6 +44,12 @@ class DashboardClient : public rclcpp::Node {
 
     ELITE::DashboardClient client_;
 
+    std::string robot_ip_;
+    int robot_connect_timeout_;
+    std::chrono::time_point<std::chrono::steady_clock> start_time_;
+
+    rclcpp::TimerBase::SharedPtr connection_timer_;
+
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr createTriggerService(const std::string& name, std::function<bool()> func) {
         return this->create_service<std_srvs::srv::Trigger>(name, [&, func](const std_srvs::srv::Trigger::Request::SharedPtr req,
                                                                             std_srvs::srv::Trigger::Response::SharedPtr resp) {
@@ -57,6 +63,9 @@ class DashboardClient : public rclcpp::Node {
         });
     }
 
+    void attemptConnection();
+    bool timeoutExpired(std::chrono::time_point<std::chrono::steady_clock>, int);
+
    public:
     DashboardClient(const rclcpp::NodeOptions& options);
     ~DashboardClient();
@@ -64,6 +73,5 @@ class DashboardClient : public rclcpp::Node {
 
 
 }
-
 
 #endif
