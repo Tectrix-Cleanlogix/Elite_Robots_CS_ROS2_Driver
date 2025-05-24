@@ -31,6 +31,8 @@ def launch_setup(context, *args, **kwargs):
     use_sim_time = LaunchConfiguration("use_sim_time")
     launch_rviz = LaunchConfiguration("launch_rviz")
     launch_servo = LaunchConfiguration("launch_servo")
+    publish_robot_description = LaunchConfiguration("publish_robot_description")
+    publish_robot_description_semantic = LaunchConfiguration("publish_robot_description_semantic")
 
     joint_limit_params = PathJoinSubstitution(
         [FindPackageShare(description_package), "config", cs_type, "joint_limits.yaml"]
@@ -161,6 +163,8 @@ def launch_setup(context, *args, **kwargs):
         "publish_geometry_updates": True,
         "publish_state_updates": True,
         "publish_transforms_updates": True,
+        "publish_robot_description" : publish_robot_description,
+        "publish_robot_description_semantic" : publish_robot_description_semantic
     }
 
     warehouse_ros_config = {
@@ -215,7 +219,7 @@ def launch_setup(context, *args, **kwargs):
     servo_node = Node(
         package="moveit_servo",
         condition=IfCondition(launch_servo),
-        executable="servo_node",
+        executable="servo_node_main",
         parameters=[
             servo_params,
             robot_description,
@@ -334,6 +338,20 @@ def generate_launch_description():
     )
     declared_arguments.append(
         DeclareLaunchArgument("launch_servo", default_value="true", description="Launch Servo?")
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "publish_robot_description",
+            default_value="true",
+            description="MoveGroup publishes robot description"
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "publish_robot_description_semantic",
+            default_value="true",
+            description="MoveGroup publishes robot description semantic"
+        )
     )
 
     return LaunchDescription(declared_arguments + [OpaqueFunction(function=launch_setup)])

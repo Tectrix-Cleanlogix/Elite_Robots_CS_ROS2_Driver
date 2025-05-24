@@ -41,7 +41,6 @@ def launch_setup(context, *args, **kwargs):
     reverse_port = LaunchConfiguration("reverse_port")
     script_sender_port = LaunchConfiguration("script_sender_port")
     trajectory_port = LaunchConfiguration("trajectory_port")
-    parent = LaunchConfiguration("parent")
     custom_xacro_path = LaunchConfiguration("custom_xacro_path")
 
     joint_limit_params = PathJoinSubstitution(
@@ -165,9 +164,6 @@ def launch_setup(context, *args, **kwargs):
             "trajectory_port:=",
             trajectory_port,
             " ",
-            "parent:=",
-            parent,
-            " ",
         ]
     )
     system_config_parser = SystemConfigParser()
@@ -176,6 +172,7 @@ def launch_setup(context, *args, **kwargs):
     initial_joint_controllers = PathJoinSubstitution(
         [FindPackageShare(runtime_config_package), "config", controllers_file]
     )
+
 
     rviz_config_file = PathJoinSubstitution(
         [FindPackageShare(description_package), "rviz", "view_robot.rviz"]
@@ -251,6 +248,14 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
+    rviz_node = Node(
+        package="rviz2",
+        condition=IfCondition(launch_rviz),
+        executable="rviz2",
+        name="rviz2",
+        output="log",
+        arguments=["-d", rviz_config_file],
+    )
 
     # Spawn controllers
     def controller_spawner(name, active=True):
@@ -274,8 +279,7 @@ def launch_setup(context, *args, **kwargs):
         "speed_scaling_state_broadcaster",
         "force_torque_sensor_broadcaster",
     ]
-    controller_spawner_inactive_names = [
-        "servo_controller", "forward_position_controller"]
+    controller_spawner_inactive_names = ["forward_position_controller", "freedrive_controller"]
 
     controller_spawners = [controller_spawner(name) for name in controller_spawner_names] + [
         controller_spawner(name, active=False) for name in controller_spawner_inactive_names
@@ -312,12 +316,13 @@ def launch_setup(context, *args, **kwargs):
         control_node,
         eli_control_node,
         components_loader,
+        # tool_communication_node,
         controller_stopper_node,
         robot_state_publisher_node,
+        rviz_node,
         initial_joint_controller_spawner_stopped,
         initial_joint_controller_spawner_started,
   ] + controller_spawners
-
 
     return nodes_to_start
 
@@ -525,13 +530,6 @@ def generate_launch_description():
             "trajectory_port",
             default_value="50003",
             description="Port that will be opened for trajectory control.",
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "parent",
-            default_value="world",
-            description="Link that the arm is attached to.",
         )
     )
     declared_arguments.append(

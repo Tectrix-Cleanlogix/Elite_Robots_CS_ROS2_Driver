@@ -2,6 +2,7 @@
 #define __ELITE_CS_ROBOT_ROS_DRIVER__HARDWARE_INTERFACE_HPP__
 
 // System
+#include <algorithm>
 #include <limits>
 #include <memory>
 #include <string>
@@ -21,16 +22,12 @@
 #include <hardware_interface/types/hardware_interface_return_values.hpp>
 
 #include <Elite/EliteDriver.hpp>
-#include <Elite/RtsiIOInterface.hpp>
+#include <Elite/RtsiClientInterface.hpp>
 
 namespace ELITE_CS_ROBOT_ROS_DRIVER {
 
-enum StoppingInterface
-{
-  NONE,
-  STOP_POSITION,
-  STOP_VELOCITY
-};
+// Other command mode
+constexpr char ELITE_HW_IF_FREEDRIVE[] = "freedrive_mode";
 
 /**
  * @brief Handles the interface between the ROS system and the main driver.
@@ -62,13 +59,15 @@ public:
 
 protected:
     std::unique_ptr<ELITE::EliteDriver> eli_driver_;
-    std::unique_ptr<ELITE::RtsiIOInterface> rtsi_;
+    std::unique_ptr<ELITE::RtsiClientInterface> rtsi_interface_;
+    ELITE::RtsiRecipeSharedPtr rtsi_out_recipe_;
+    ELITE::RtsiRecipeSharedPtr rtsi_in_recipe_;
     std::unique_ptr<std::thread> async_thread_;
     bool async_thread_alive_;
     ELITE::TaskStatus runtime_state_;
     // resources switching aux vars
-    std::vector<uint> stop_modes_;
-    std::vector<std::string> start_modes_;
+    std::vector<std::vector<std::string>> stop_modes_;
+    std::vector<std::vector<std::string>> start_modes_;
     bool position_controller_running_;
     bool velocity_controller_running_;
     bool controllers_initialized_;
@@ -147,6 +146,13 @@ protected:
     double zero_ftsensor_cmd_;
     double zero_ftsensor_async_success_;
 
+    // Freedrive interface values
+    bool freedrive_activated_;
+    bool freedrive_controller_running_;
+    double freedrive_async_success_;
+    double freedrive_start_cmd_;
+    double freedrive_end_cmd_;
+
     // transform stuff
     tf2::Vector3 tcp_force_;
     tf2::Vector3 tcp_torque_;
@@ -154,9 +160,27 @@ protected:
 
     bool timeoutExpired(std::chrono::time_point<std::chrono::steady_clock>, int);
     void asyncThread();
-    void checkAsyncIO();
+    void updateAsyncIO();
+    bool updateStandardIO(bool* is_update);
+    bool updateConfigIO(bool* is_update);
+    bool updateToolDigital(bool* is_update);
+    bool updateStandardAnalog(bool* is_update);
+    bool updateToolVoltage(bool* is_update);
+
     void extractToolPose();
     void transformForceTorque();
+    bool rtsiInit(const std::string& ip, const std::string& output_file, const std::string& input_file);
+    std::vector<std::string> readRecipe(const std::string& recipe_file);
+
+    template <const char*... Args>
+    bool containsAnyOfString(const std::vector<std::string>& input) {
+        return std::any_of(input.begin(), input.end(), [&](const std::string& item) { return ((item == Args) || ...); });
+    }
+
+    template <typename T>
+    void removeVectorElements(std::vector<T>& vec, const T& key) {
+        vec.erase(std::remove_if(vec.begin(), vec.end(), [&](const T& item) { return item == key; }), vec.end());
+    }
 };
 }  // namespace ELITE_CS_ROBOT_ROS_DRIVER
 
