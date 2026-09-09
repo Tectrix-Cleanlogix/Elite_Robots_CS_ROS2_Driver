@@ -18,15 +18,14 @@
 // Real-time memory REPORTING: the periodic page-fault/memory-footprint monitor.
 // See test/test_rt_memory_reporting.cpp.
 #include "eli_cs_robot_driver/rt_memory_reporting.hpp"
+// Real-time SCHEDULING of the control loop thread: SCHED_FIFO priority and CPU
+// pin from the rt_sched.* parameters. ROS-free like rt_memory (see rt_sched.hpp);
+// this file logs its result. See test/test_rt_sched.cpp.
+#include "eli_cs_robot_driver/rt_sched.hpp"
 
 // Rely on a subclass of ControllerManager to intercept the pre-shutdown hook
 // and execute a workaround for a ROS2 Humble bug to ensure orderly shutdown at termination.
 #include "eli_cs_robot_driver/elite_controller_manager.hpp"
-
-// This include directive triggers a compilation warning to use <realtime_tools/realtime_helpers.hpp> instead.
-// However, while that change is a drop-in replacement that clears the warning, something about it introduces
-// a breaking change of the worse kind -- silent failures. Arm motions fail in real life without explicit errors, etc.
-#include <realtime_tools/thread_priority.hpp>
 
 // Elite code is inspired by:
 // https://github.com/ros-controls/ros2_control/blob/master/controller_manager/src/ros2_control_node.cpp
@@ -144,11 +143,41 @@ int main(int argc, char** argv) {
     const std::size_t heap_reserve_bytes =
         static_cast<std::size_t>(heap_reserve_mb * 1024.0 * 1024.0);
 
+    // Same treatment for the control loop's scheduling: SCHED_FIFO priority and
+    // the CPU it is pinned to are parameters so each deployed node (arm, hose
+    // reel) can be placed in the host's priority ladder from its launch file.
+    // Defaults reproduce the previous compiled-in behaviour (FIFO 50, no pin).
+    // Range/fallback policy lives in rt_sched.hpp and is unit-tested.
+    namespace rts = ELITE_CS_ROBOT_ROS_DRIVER::rt_sched;
+    const int rt_priority =
+        rt_param_or_default<int>(*controller_manager, "rt_sched.priority", rts::kDefaultPriority);
+    const int rt_cpu = rt_param_or_default<int>(*controller_manager, "rt_sched.cpu", rts::kNoCpuPin);
+
     // Control loop thread
-    std::thread control_loop([controller_manager, heap_reserve_bytes, log_interval_sec]() {
-        if (!realtime_tools::configure_sched_fifo(50)) {
-            RCLCPP_WARN(controller_manager->get_logger(), "Could not enable FIFO RT scheduling policy");
+    std::thread control_loop([controller_manager, heap_reserve_bytes, log_interval_sec,
+                              rt_priority, rt_cpu]() {
+        // Pin (if asked) and switch this thread to SCHED_FIFO. configure_realtime_sched
+        // never aborts: a bad tuning value or a refused syscall degrades to the
+        // old behaviour and is logged, it must not take the drivers down.
+        namespace rts = ELITE_CS_ROBOT_ROS_DRIVER::rt_sched;
+        const rts::RtSchedSetup sched = rts::configure_realtime_sched(rt_cpu, rt_priority);
+        if (!sched.priority_valid) {
+            RCLCPP_WARN(controller_manager->get_logger(),
+                "rt_sched.priority %d is outside %d..%d; using default %d",
+                sched.requested_priority, rts::kMinPriority, rts::kMaxPriority,
+                sched.applied_priority);
         }
+        if (sched.affinity_attempted && !sched.affinity_succeeded) {
+            RCLCPP_WARN(controller_manager->get_logger(),
+                "Could not pin control thread to CPU %d (%s); affinity left unchanged",
+                sched.requested_cpu, sched.affinity_error.c_str());
+        }
+        if (!sched.sched_succeeded) {
+            RCLCPP_WARN(controller_manager->get_logger(),
+                "Could not enable FIFO RT scheduling policy (priority %d): %s",
+                sched.applied_priority, std::strerror(sched.sched_errno));
+        }
+        RCLCPP_INFO(controller_manager->get_logger(), "%s", rts::describe(sched).c_str());
 
         namespace rt = ELITE_CS_ROBOT_ROS_DRIVER::rt_memory;
 

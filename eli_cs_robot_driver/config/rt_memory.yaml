@@ -11,3 +11,17 @@ controller_manager:
     # Seconds between periodic page-fault / memory-footprint report log lines
     # from the control loop. <= 0 disables the monitor entirely.
     rt_memory.log_interval_sec: 30.0
+
+    # Real-time SCHEDULING of the control loop thread (rt_sched.hpp). Both
+    # default to the behaviour the node had before these parameters existed:
+    # SCHED_FIFO 50, thread free to run on any allowed CPU. Production sets them
+    # per node from the launch file so the two cyclic loops (arm, hose reel) sit
+    # at distinct priorities on distinct cores; see the moveit repo's
+    # robot_drivers_to_persist.launch.py.
+    #
+    # SCHED_FIFO priority, 1..98 (99 is the kernel's). Out of range -> WARN and 50.
+    # rt_sched.priority: 50
+    #
+    # CPU to pin the loop thread to; -1 = leave affinity alone. A CPU outside the
+    # container's cpuset is reported as a failed pin and the loop stays unpinned.
+    # rt_sched.cpu: -1

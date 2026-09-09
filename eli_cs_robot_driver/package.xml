@@ -32,6 +32,7 @@
   <depend>pluginlib</depend>
   <depend>controller_manager_msgs</depend>
   <depend>controller_manager</depend>
+  <depend>realtime_tools</depend>
   <depend>launch</depend>
   <depend>launch_ros</depend>
   
