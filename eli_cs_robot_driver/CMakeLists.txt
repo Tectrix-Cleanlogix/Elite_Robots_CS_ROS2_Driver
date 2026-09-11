@@ -20,6 +20,7 @@ find_package(controller_manager REQUIRED)
 find_package(controller_manager_msgs REQUIRED)
 find_package(backward_ros REQUIRED)
 find_package(elite-cs-series-sdk REQUIRED)
+find_package(realtime_tools REQUIRED)
 
 set(
   THIS_PACKAGE_DEPENDENCIES
@@ -165,11 +166,13 @@ add_executable(
   src/control_node.cpp
   src/rt_memory.cpp
   src/rt_memory_reporting.cpp
+  src/rt_sched.cpp
 )
 ament_target_dependencies(
   eli_ros2_control_node
   controller_manager
   rclcpp
+  realtime_tools
 )
 target_include_directories(
   eli_ros2_control_node
@@ -232,6 +235,13 @@ if(BUILD_TESTING)
   # Unit tests for the real-time memory REPORTING helpers (rt_memory_reporting.hpp).
   ament_add_gtest(test_rt_memory_reporting test/test_rt_memory_reporting.cpp)
   target_include_directories(test_rt_memory_reporting PRIVATE include)
+
+  # Unit tests for the real-time SCHEDULING helpers (rt_sched.hpp): priority
+  # validation, the summary line, and configure_realtime_sched() (pin asserted
+  # for real; the SCHED_FIFO request is asserted to report, CI is unprivileged).
+  ament_add_gtest(test_rt_sched test/test_rt_sched.cpp src/rt_sched.cpp)
+  target_include_directories(test_rt_sched PRIVATE include)
+  ament_target_dependencies(test_rt_sched realtime_tools)
 
   # Regression test for elite_control.launch.py's bool-typed launch parameters.
   find_package(ament_cmake_pytest REQUIRED)

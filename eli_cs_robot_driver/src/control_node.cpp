@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstring>
 #include <exception>
+#include <string>
 
 #include <unistd.h>
 
@@ -17,20 +18,41 @@
 // Real-time memory REPORTING: the periodic page-fault/memory-footprint monitor.
 // See test/test_rt_memory_reporting.cpp.
 #include "eli_cs_robot_driver/rt_memory_reporting.hpp"
+// Real-time SCHEDULING of the control loop thread: SCHED_FIFO priority and CPU
+// pin from the rt_sched.* parameters. ROS-free like rt_memory (see rt_sched.hpp);
+// this file logs its result. See test/test_rt_sched.cpp.
+#include "eli_cs_robot_driver/rt_sched.hpp"
 
 // Rely on a subclass of ControllerManager to intercept the pre-shutdown hook
 // and execute a workaround for a ROS2 Humble bug to ensure orderly shutdown at termination.
 #include "eli_cs_robot_driver/elite_controller_manager.hpp"
 
-// This include directive triggers a compilation warning to use <realtime_tools/realtime_helpers.hpp> instead.
-// However, while that change is a drop-in replacement that clears the warning, something about it introduces
-// a breaking change of the worse kind -- silent failures. Arm motions fail in real life without explicit errors, etc.
-#include <realtime_tools/thread_priority.hpp>
-
 // Elite code is inspired by:
 // https://github.com/ros-controls/ros2_control/blob/master/controller_manager/src/ros2_control_node.cpp
 
 std::atomic<int> exit_code{0};
+
+// Read an rt_* tuning parameter, declaring it with `default_value` only if it is
+// not already declared. The controller manager is built with
+// automatically_declare_parameters_from_overrides (controller_manager::get_cm_node_options),
+// so any parameter supplied by the launch file / -p is ALREADY declared by the
+// time main() runs, and a plain declare_parameter() throws
+// ParameterAlreadyDeclaredException -- which std::terminate()s the node before
+// the control loop starts. A value of the wrong type (e.g. 80.0 for an int) is
+// also just a tuning mistake: warn and use the default rather than abort.
+template <typename T>
+T rt_param_or_default(rclcpp::Node& node, const std::string& name, T default_value) {
+    try {
+        if (!node.has_parameter(name)) {
+            node.declare_parameter<T>(name, default_value);
+        }
+        return node.get_parameter(name).get_value<T>();
+    } catch (const std::exception& ex) {
+        RCLCPP_WARN(node.get_logger(), "Parameter '%s' unusable (%s); using default",
+            name.c_str(), ex.what());
+        return default_value;
+    }
+}
 
 void signal_handler(int signal) {
     // SIGUSR1 is our custom error-exit signal. Only set the exit code here.
@@ -109,24 +131,53 @@ int main(int argc, char** argv) {
     // so they can be set the same way as everything else the node reads --
     // config/rt_memory.yaml, a launch override, or --ros-args -p -- without a
     // recompile. Declared/read once here (main thread) and passed into the
-    // control loop by value.
-    controller_manager->declare_parameter<double>(
+    // control loop by value. Declared via rt_param_or_default (see above): the CM
+    // auto-declares anything passed from launch, so an unconditional
+    // declare_parameter() here threw and killed the node whenever a launch file
+    // actually set one of these.
+    const double heap_reserve_mb = rt_param_or_default<double>(*controller_manager,
         "rt_memory.heap_reserve_mb",
         static_cast<double>(rt::kDefaultHeapReserveBytes) / (1024.0 * 1024.0));
-    controller_manager->declare_parameter<double>(
+    const double log_interval_sec = rt_param_or_default<double>(*controller_manager,
         "rt_memory.log_interval_sec", rt::kDefaultLogIntervalSeconds);
-    const double heap_reserve_mb =
-        controller_manager->get_parameter("rt_memory.heap_reserve_mb").as_double();
-    const double log_interval_sec =
-        controller_manager->get_parameter("rt_memory.log_interval_sec").as_double();
     const std::size_t heap_reserve_bytes =
         static_cast<std::size_t>(heap_reserve_mb * 1024.0 * 1024.0);
 
+    // Same treatment for the control loop's scheduling: SCHED_FIFO priority and
+    // the CPU it is pinned to are parameters so each deployed node (arm, hose
+    // reel) can be placed in the host's priority ladder from its launch file.
+    // Defaults reproduce the previous compiled-in behaviour (FIFO 50, no pin).
+    // Range/fallback policy lives in rt_sched.hpp and is unit-tested.
+    namespace rts = ELITE_CS_ROBOT_ROS_DRIVER::rt_sched;
+    const int rt_priority =
+        rt_param_or_default<int>(*controller_manager, "rt_sched.priority", rts::kDefaultPriority);
+    const int rt_cpu = rt_param_or_default<int>(*controller_manager, "rt_sched.cpu", rts::kNoCpuPin);
+
     // Control loop thread
-    std::thread control_loop([controller_manager, heap_reserve_bytes, log_interval_sec]() {
-        if (!realtime_tools::configure_sched_fifo(50)) {
-            RCLCPP_WARN(controller_manager->get_logger(), "Could not enable FIFO RT scheduling policy");
+    std::thread control_loop([controller_manager, heap_reserve_bytes, log_interval_sec,
+                              rt_priority, rt_cpu]() {
+        // Pin (if asked) and switch this thread to SCHED_FIFO. configure_realtime_sched
+        // never aborts: a bad tuning value or a refused syscall degrades to the
+        // old behaviour and is logged, it must not take the drivers down.
+        namespace rts = ELITE_CS_ROBOT_ROS_DRIVER::rt_sched;
+        const rts::RtSchedSetup sched = rts::configure_realtime_sched(rt_cpu, rt_priority);
+        if (!sched.priority_valid) {
+            RCLCPP_WARN(controller_manager->get_logger(),
+                "rt_sched.priority %d is outside %d..%d; using default %d",
+                sched.requested_priority, rts::kMinPriority, rts::kMaxPriority,
+                sched.applied_priority);
         }
+        if (sched.affinity_attempted && !sched.affinity_succeeded) {
+            RCLCPP_WARN(controller_manager->get_logger(),
+                "Could not pin control thread to CPU %d (%s); affinity left unchanged",
+                sched.requested_cpu, sched.affinity_error.c_str());
+        }
+        if (!sched.sched_succeeded) {
+            RCLCPP_WARN(controller_manager->get_logger(),
+                "Could not enable FIFO RT scheduling policy (priority %d): %s",
+                sched.applied_priority, std::strerror(sched.sched_errno));
+        }
+        RCLCPP_INFO(controller_manager->get_logger(), "%s", rts::describe(sched).c_str());
 
         namespace rt = ELITE_CS_ROBOT_ROS_DRIVER::rt_memory;
 
